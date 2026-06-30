@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cart — Shopli</title>
+<style>
+  body{font-family:-apple-system,sans-serif;background:#fafaf8;margin:0;padding:40px;}
+  a{color:#6b6b6b;text-decoration:none;}
+  .row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:10px;max-width:600px;}
+  .total{font-weight:700;font-size:1.2rem;margin:20px 0;}
+  button{padding:10px 22px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+  input{padding:8px;border:1px solid #ddd;border-radius:6px;width:100%;max-width:580px;margin-bottom:14px;}
+</style>
+</head>
+<body>
+<a href="/">&larr; continue shopping</a>
+<h2>Your cart</h2>
+<div id="items"></div>
+<div class="total" id="total"></div>
+<input id="address" placeholder="Shipping address">
+<br>
+<button onclick="checkout()">Checkout</button>
+<div id="msg" style="margin-top:14px;"></div>
+
+<script>
+function render() {
+  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  const itemsEl = document.getElementById('items');
+  let total = 0;
+  itemsEl.innerHTML = cart.map(i => {
+    total += i.price * i.quantity;
+    return `<div class="row"><span>${i.name} x${i.quantity}</span><span>$${(i.price*i.quantity).toFixed(2)}</span></div>`;
+  }).join('') || '<p>Cart is empty.</p>';
+  document.getElementById('total').textContent = 'Total: $' + total.toFixed(2);
+}
+
+async function checkout() {
+  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  const token = localStorage.getItem('token');
+  const msgEl = document.getElementById('msg');
+  if (!token) { msgEl.textContent = 'Please log in first.'; return; }
+  if (!cart.length) { msgEl.textContent = 'Cart is empty.'; return; }
+
+  const res = await fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      items: cart.map(i => ({ product_id: i.id, quantity: i.quantity })),
+      shipping_address: document.getElementById('address').value
+    })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    msgEl.textContent = 'Order placed! Order #' + data.id + ' — total $' + data.total.toFixed(2);
+    localStorage.removeItem('cart');
+    render();
+  } else {
+    msgEl.textContent = 'Error: ' + data.error;
+  }
+}
+
+render();
+</script>
+</body>
+</html>

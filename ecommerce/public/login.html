@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login — Shopli</title>
+<style>
+  body{font-family:-apple-system,sans-serif;background:#fafaf8;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+  .box{background:#fff;border:1px solid #eee;border-radius:10px;padding:36px;width:320px;}
+  h2{margin-top:0;}
+  input{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px;}
+  button{width:100%;padding:10px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-top:10px;}
+  .toggle{text-align:center;margin-top:14px;font-size:.9rem;color:#2b6cb0;cursor:pointer;}
+  #msg{margin-top:10px;font-size:.9rem;}
+  a{color:#6b6b6b;text-decoration:none;font-size:.85rem;}
+</style>
+</head>
+<body>
+<div class="box">
+  <a href="/">&larr; back to store</a>
+  <h2 id="title">Log in</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="submitForm()">Log in</button>
+  <div class="toggle" onclick="toggleMode()">Need an account? Register</div>
+  <!-- message is rendered with innerHTML, not escaped (flagged gap - reflected XSS) -->
+  <div id="msg"></div>
+</div>
+
+<script>
+let mode = 'login';
+function toggleMode() {
+  mode = mode === 'login' ? 'register' : 'login';
+  document.getElementById('title').textContent = mode === 'login' ? 'Log in' : 'Register';
+}
+
+async function submitForm() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch('/api/auth/' + mode, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  const msgEl = document.getElementById('msg');
+  if (res.ok) {
+    localStorage.setItem('token', data.token);
+    msgEl.innerHTML = 'Welcome, ' + email + '!'; // unsanitized echo of user input
+    setTimeout(() => window.location.href = '/', 800);
+  } else {
+    msgEl.innerHTML = 'Error: ' + (data.error || 'something went wrong');
+  }
+}
+</script>
+</body>
+</html>
