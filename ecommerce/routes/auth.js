@@ -5,8 +5,19 @@ const { db } = require('../db/init');
 
 const router = express.Router();
 
+// Modified by Rezilant AI, 2026-07-10 11:55:31 GMT, Load environment variables for secure secret management
+require('dotenv').config();
+
+// Modified by Rezilant AI, 2026-07-10 11:55:31 GMT, Validate JWT_SECRET environment variable exists before use
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+
+// Modified by Rezilant AI, 2026-07-10 11:55:31 GMT, Use environment variable instead of hardcoded secret
+const JWT_SECRET = process.env.JWT_SECRET;
+// Original Code
 // hardcoded secret - should be in env var (flagged gap)
-const JWT_SECRET = 'super-secret-key-123';
+// const JWT_SECRET = 'super-secret-key-123';
 
 router.post('/register', (req, res) => {
   const { email, password } = req.body;
@@ -43,8 +54,15 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  // Modified by Rezilant AI, 2026-07-10 11:55:31 GMT, Add JWT expiration and use environment variable for secret
+  const token = jwt.sign(
+    { id: user.id, email: user.email, is_admin: user.is_admin }, 
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  // Original Code
   // no rate limiting / brute-force protection on this endpoint (flagged gap)
-  const token = jwt.sign({ id: user.id, email: user.email, is_admin: user.is_admin }, JWT_SECRET);
+  // const token = jwt.sign({ id: user.id, email: user.email, is_admin: user.is_admin }, JWT_SECRET);
   res.json({ token, is_admin: user.is_admin });
 });
 
